@@ -8,15 +8,14 @@ from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from pydantic import BaseModel
 
 from database import SessionDep
-from models import UserRole, UserModel
-from repository import UserRepository
+from models import Roles, UserModel
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/users/login",
     scopes={
-        "ADMIN": "Can manage users",
-        "CONSULTANT": "Can create invoices and view tariffs",
-        "SERVICEMAN": "Can create and edit downtime logs",
+        "EMPLOYEE": "Can see posts and comment on them",
+        "MANAGER": "Can create posts, view them and manage comments",
+        "ADMINISTRATOR": "Can do anything with posts, can create and remove users",
     },
 )
 SECRET_KEY = "your_secret_key"
@@ -36,7 +35,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     uid: int
-    scopes: list[UserRole] = []
+    scopes: list[Roles] = []
     sid: UUID
 
 
@@ -59,7 +58,7 @@ async def get_token(
         uid: int = payload.get("uid")
         if uid is None:
             raise credentials_exception
-        scopes: list[UserRole] = payload.get("scopes")
+        scopes: list[Roles] = payload.get("scopes")
         for requested_scope in security_scopes.scopes:
             if requested_scope not in scopes:
                 raise HTTPException(
@@ -76,26 +75,21 @@ async def get_token(
 async def get_current_user(
         session: SessionDep, token: TokenData = Depends(get_token)
 ) -> UserModel:
-    user_in_db = UserRepository.get_by_id(session, token.uid)
+    user_in_db = session.get(UserModel, token.uid)
     if user_in_db is None:
         raise HTTPException(
             status_code=401,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    elif user_in_db.current_session_id != token.sid:
-        raise HTTPException(
-            status_code=401,
-            detail="Session expired",
-        )
     return user_in_db
 
 
-AdminRequired = Annotated[UserModel, Security(get_current_user, scopes=["ADMIN"])]
+EmployeeRequired = Annotated[UserModel, Security(get_current_user, scopes=["EMPLOYEE"])]
 ConsultantRequired = Annotated[
-    UserModel, Security(get_current_user, scopes=["CONSULTANT"])
+    UserModel, Security(get_current_user, scopes=["MANAGER"])
 ]
-ServicemanRequired = Annotated[
-    UserModel, Security(get_current_user, scopes=["SERVICEMAN"])
+AdministratorRequired = Annotated[
+    UserModel, Security(get_current_user, scopes=["ADMIN"])
 ]
 AnyUser = Annotated[UserModel, Depends(get_current_user)]
