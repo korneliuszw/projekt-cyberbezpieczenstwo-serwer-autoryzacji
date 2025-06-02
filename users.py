@@ -56,13 +56,16 @@ async def create_user(_: AdministratorRequired, new_user: NewUserSchema, session
     except IntegrityError:
         raise HTTPException(status_code=400, detail="User already exists")
 
-@users_router.delete("/{user_id}", status_code=204)
-async def delete_user(user_id: int, current_user: AdministratorRequired, session: SessionDep):
-    user_to_delete = session.query(UserModel).filter(UserModel.id == user_id).first()
+@users_router.delete("/{username}/{email}", status_code=204)
+async def delete_user(username: str, email: str, current_user: AdministratorRequired, session: SessionDep):
+    user_to_delete = session.query(UserModel).filter(
+        UserModel.username == username,
+        UserModel.email == email
+    ).first()
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if current_user.id == user_id:
+    if current_user.username == username:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
     session.delete(user_to_delete)
