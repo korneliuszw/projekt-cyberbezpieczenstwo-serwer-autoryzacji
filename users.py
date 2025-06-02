@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from database import SessionDep
 from models import UserModel, Roles
 from oauth import create_access_token, Token, AdministratorRequired
-from schema import NewUserSchema, GetUserSchema
+from schema import NewUserSchema, GetUserSchema, DeleteUserSchema
 
 users_router = APIRouter(
     prefix="/users",
@@ -56,16 +56,16 @@ async def create_user(_: AdministratorRequired, new_user: NewUserSchema, session
     except IntegrityError:
         raise HTTPException(status_code=400, detail="User already exists")
 
-@users_router.delete("/{username}/{email}", status_code=204)
-async def delete_user(username: str, email: str, current_user: AdministratorRequired, session: SessionDep):
+@users_router.delete("/", status_code=204)
+async def delete_user(delete_data: DeleteUserSchema, current_user: AdministratorRequired, session: SessionDep):
     user_to_delete = session.query(UserModel).filter(
-        UserModel.username == username,
-        UserModel.email == email
+        UserModel.username == delete_data.username,
+        UserModel.email == delete_data.email
     ).first()
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if current_user.username == username:
+    if current_user.username == delete_data.username:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
     session.delete(user_to_delete)

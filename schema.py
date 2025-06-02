@@ -13,3 +13,7 @@ class GetUserSchema(BaseModel):
     username: str
     email: str
     role: Roles
+
+class DeleteUserSchema(BaseModel):
+    username: str
+    email: str
