@@ -1,6 +1,5 @@
 import uuid
 from datetime import timedelta
-from sqlite3 import IntegrityError
 from typing import Annotated, List
 
 import bcrypt
@@ -44,17 +43,22 @@ async def get_users(_: AdministratorRequired, session: SessionDep):
 
 @users_router.post("/", status_code=201)
 async def create_user(_: AdministratorRequired, new_user: NewUserSchema, session: SessionDep):
+    existing_user_by_username = session.query(UserModel).filter(UserModel.username == new_user.username).first()
+    if existing_user_by_username:
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    existing_user_by_email = session.query(UserModel).filter(UserModel.email == new_user.email).first()
+    if existing_user_by_email:
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
     model = UserModel(
         username=new_user.username,
         email=new_user.email,
         hashed_password=bcrypt.hashpw(new_user.password.encode("utf-8"), bcrypt.gensalt()),
         role=new_user.role.value,
     )
-    try:
-        session.add(model)
-        session.commit()
-    except IntegrityError:
-        raise HTTPException(status_code=400, detail="User already exists")
+    session.add(model)
+    session.commit()
 
 @users_router.delete("/", status_code=204)
 async def delete_user(delete_data: DeleteUserSchema, current_user: AdministratorRequired, session: SessionDep):
