@@ -65,6 +65,9 @@ async def delete_user(delete_data: DeleteUserSchema, current_user: Administrator
     if not user_to_delete:
         raise HTTPException(status_code=404, detail="User not found")
     
+    if delete_data.username == "admin" and delete_data.email == "admin@admin.com":
+        raise HTTPException(status_code=403, detail="Cannot delete the main admin user")
+    
     if current_user.username == delete_data.username:
         raise HTTPException(status_code=400, detail="Cannot delete yourself")
     
