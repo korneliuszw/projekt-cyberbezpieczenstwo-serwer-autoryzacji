@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from database import SessionDep
 from models import Roles, UserModel
+import os
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/users/login",
@@ -18,8 +19,8 @@ oauth2_scheme = OAuth2PasswordBearer(
         "ADMINISTRATOR": "Can do anything with posts, can create and remove users",
     },
 )
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
+SECRET_KEY = os.environ.get("PYTHON_SECRET_KEY", "your_secret_key")
+ALGORITHM = os.environ.get("PYTHON_ALGORITHM", "HS256")
 
 credentials_exception = HTTPException(
     status_code=401,
@@ -35,6 +36,8 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     uid: int
+    username: str
+    email: str
     scopes: list[Roles] = []
     sid: UUID
 
@@ -51,12 +54,18 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_token(
-        security_scopes: SecurityScopes, token: Annotated[str, Depends(oauth2_scheme)]
+    security_scopes: SecurityScopes, token: Annotated[str, Depends(oauth2_scheme)]
 ):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         uid: int = payload.get("uid")
         if uid is None:
+            raise credentials_exception
+        username: str = payload.get("username")
+        if username is None:
+            raise credentials_exception
+        email: str = payload.get("email")
+        if email is None:
             raise credentials_exception
         scopes: list[Roles] = payload.get("scopes")
         for requested_scope in security_scopes.scopes:
@@ -67,13 +76,15 @@ async def get_token(
                     headers={"WWW-Authenticate": "Bearer"},
                 )
         sid = UUID(payload.get("sid"))
-        return TokenData(uid=uid, sid=sid, scopes=scopes)
+        return TokenData(
+            uid=uid, username=username, email=email, sid=sid, scopes=scopes
+        )
     except jwt.PyJWTError:
         raise credentials_exception
 
 
 async def get_current_user(
-        session: SessionDep, token: TokenData = Depends(get_token)
+    session: SessionDep, token: TokenData = Depends(get_token)
 ) -> UserModel:
     user_in_db = session.get(UserModel, token.uid)
     if user_in_db is None:
