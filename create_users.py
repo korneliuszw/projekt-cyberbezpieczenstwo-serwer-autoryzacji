@@ -3,7 +3,7 @@ import bcrypt
 from database import DbSession
 from models import UserModel, Roles
 
-admin_password = "admin123"
+admin_password = "admin1234"
 admin_email = "admin@admin.com"
 admin_login = "admin"
 
