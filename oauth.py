@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from database import SessionDep
 from models import Roles, UserModel
+import os
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/users/login",
@@ -18,8 +19,8 @@ oauth2_scheme = OAuth2PasswordBearer(
         "ADMINISTRATOR": "Can do anything with posts, can create and remove users",
     },
 )
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
+SECRET_KEY = os.environ.get("PYTHON_SECRET_KEY", "your_secret_key")
+ALGORITHM = os.environ.get("PYTHON_ALGORITHM", "HS256")
 
 credentials_exception = HTTPException(
     status_code=401,
