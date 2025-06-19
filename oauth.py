@@ -3,6 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 import jwt
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from pydantic import BaseModel
@@ -10,6 +11,8 @@ from pydantic import BaseModel
 from database import SessionDep
 from models import Roles, UserModel
 import os
+
+load_dotenv()
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/users/login",
@@ -19,8 +22,11 @@ oauth2_scheme = OAuth2PasswordBearer(
         "ADMINISTRATOR": "Can do anything with posts, can create and remove users",
     },
 )
+
 SECRET_KEY = os.environ.get("PYTHON_SECRET_KEY", "your_secret_key")
 ALGORITHM = os.environ.get("PYTHON_ALGORITHM", "HS256")
+
+print(SECRET_KEY)
 
 credentials_exception = HTTPException(
     status_code=401,
@@ -81,7 +87,12 @@ async def get_token(
                 )
         sid = UUID(payload.get("sid"))
         return TokenData(
-            uid=uid, username=username, email=email, sid=sid, scopes=scopes, restaurant=restaurant
+            uid=uid,
+            username=username,
+            email=email,
+            sid=sid,
+            scopes=scopes,
+            restaurant=restaurant,
         )
     except jwt.PyJWTError:
         raise credentials_exception
