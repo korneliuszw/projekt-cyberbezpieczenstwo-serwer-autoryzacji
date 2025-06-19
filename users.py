@@ -41,6 +41,7 @@ async def login(
             "username": db_user.username,
             "email": db_user.email,
             "sid": str(session_id),
+            "restaurant": db_user.restaurant
         },
         expires_delta=timedelta(hours=1),
     )
@@ -76,6 +77,7 @@ async def create_user(
             new_user.password.encode("utf-8"), bcrypt.gensalt()
         ),
         role=new_user.role.value,
+        restaurant=new_user.restaurant
     )
     session.add(model)
     session.commit()

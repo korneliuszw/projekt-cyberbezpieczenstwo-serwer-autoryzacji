@@ -40,6 +40,7 @@ class TokenData(BaseModel):
     email: str
     scopes: list[Roles] = []
     sid: UUID
+    restaurant: str
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -67,6 +68,9 @@ async def get_token(
         email: str = payload.get("email")
         if email is None:
             raise credentials_exception
+        restaurant: str = payload.get("restaurant")
+        if restaurant is None:
+            raise credentials_exception
         scopes: list[Roles] = payload.get("scopes")
         for requested_scope in security_scopes.scopes:
             if requested_scope not in scopes:
@@ -77,7 +81,7 @@ async def get_token(
                 )
         sid = UUID(payload.get("sid"))
         return TokenData(
-            uid=uid, username=username, email=email, sid=sid, scopes=scopes
+            uid=uid, username=username, email=email, sid=sid, scopes=scopes, restaurant=restaurant
         )
     except jwt.PyJWTError:
         raise credentials_exception

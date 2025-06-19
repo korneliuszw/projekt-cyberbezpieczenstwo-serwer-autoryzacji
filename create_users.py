@@ -21,6 +21,7 @@ with DbSession() as session:
         email=admin_email,
         hashed_password=bcrypt.hashpw(admin_password.encode("utf-8"), bcrypt.gensalt()),
         role=Roles.ADMIN,
+        restaurant="ADMIN"
     )
     session.add(admin)
 
@@ -31,6 +32,7 @@ with DbSession() as session:
             manager_password.encode("utf-8"), bcrypt.gensalt()
         ),
         role=Roles.MANAGER,
+        restaurant="GDA01"
     )
     session.add(manager)
 
@@ -41,6 +43,7 @@ with DbSession() as session:
             employee_password.encode("utf-8"), bcrypt.gensalt()
         ),
         role=Roles.EMPLOYEE,
+        restaurant="GDA01"
     )
     session.add(employee)
 

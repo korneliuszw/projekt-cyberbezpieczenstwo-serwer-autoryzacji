@@ -28,3 +28,4 @@ class UserModel(Base):
     email: Mapped[str] = mapped_column()
     hashed_password: Mapped[bytes] = mapped_column(LargeBinary)
     role: Mapped[Roles] = mapped_column()
+    restaurant: Mapped[str] = mapped_column()
